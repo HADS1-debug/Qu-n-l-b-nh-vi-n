@@ -37,8 +37,8 @@ public class StaffRepository {
             SELECT nv.id_nv, nv.ho_ten, COALESCE(nv.gioi_tinh, '') AS gioi_tinh,
                    COALESCE(to_char(nv.ngay_sinh, 'YYYY-MM-DD'), '') AS ngay_sinh,
                    COALESCE(nv.email, '') AS email, nv.vai_tro, nv.trang_thai,
-                   COALESCE(nv.chi_tiet,
-                            NULLIF(concat_ws(' · ', bs.hoc_vi, ck.ten_ck, yt.cap_bac, ds.bang_cap), ''), '') AS chi_tiet,
+                   COALESCE(NULLIF(concat_ws(' · ', bs.hoc_vi, ck.ten_ck, yt.cap_bac, ds.bang_cap), ''),
+                            nv.chi_tiet, '') AS chi_tiet,
                    bs.id_pk, bs.id_ck, bs.hoc_vi, bs.so_cchn
             FROM nhanvien nv
             LEFT JOIN bacsy bs ON bs.id_nv = nv.id_nv
@@ -92,15 +92,32 @@ public class StaffRepository {
         return ids.next("nhanvien", "id_nv", "NV", 3);
     }
 
+    /** nhanvien.chi_tiet chỉ dùng cho vai trò KHÔNG có bảng con (Thu ngân, Quản lý). */
+    private static String freeTextDetail(Staff s) {
+        String r = s.getVaiTro();
+        boolean hasSubtable = ROLE_DOCTOR.equalsIgnoreCase(r) || ROLE_NURSE.equalsIgnoreCase(r) || ROLE_PHARMACIST.equalsIgnoreCase(r);
+        return hasSubtable ? null : Db.trimToNull(s.getSpecialtyDetail());
+    }
+
+    /** Y tá -> yta.cap_bac, Dược sĩ -> duocsi.bang_cap (Bác sĩ: hoc_vi do assignDoctor ghi). */
+    private void saveRoleDetail(Staff s) {
+        String detail = Db.trimToNull(s.getSpecialtyDetail());
+        if (ROLE_NURSE.equalsIgnoreCase(s.getVaiTro())) {
+            jdbc.update("UPDATE yta SET cap_bac = ? WHERE id_nv = ?", detail, s.getIdNv());
+        } else if (ROLE_PHARMACIST.equalsIgnoreCase(s.getVaiTro())) {
+            jdbc.update("UPDATE duocsi SET bang_cap = ? WHERE id_nv = ?", detail, s.getIdNv());
+        }
+    }
     public void insertStaff(Staff s) {
         jdbc.update("INSERT INTO nhanvien (id_nv, ho_ten, gioi_tinh, ngay_sinh, vai_tro, trang_thai, email, chi_tiet) "
                         + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 s.getIdNv(), s.getHoTen(), Db.trimToNull(s.getGioiTinh()),
                 Db.sqlDate(Db.parseDate(s.getNgaySinh(), "Ngày sinh")), s.getVaiTro(),
                 Labels.STAFF_STATUS.code(s.getTrangThai(), "DANG_LAM"), Db.trimToNull(s.getEmail()),
-                Db.trimToNull(s.getSpecialtyDetail()));
+                freeTextDetail(s));
         replacePhones(s.getIdNv(), s.getSdt());
         syncSubtype(s.getIdNv(), s.getVaiTro());
+        saveRoleDetail(s);
     }
 
     public void updateStaff(Staff s) {

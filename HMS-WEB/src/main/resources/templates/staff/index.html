@@ -166,9 +166,9 @@
                                                     <!-- Chỉ hiện khi vai trò = Bác sĩ -->
                                                     <th:block th:replace="~{fragments/staff-doctor-fields :: fields(${st.idCk}, ${st.idPk}, ${st.hocVi}, ${st.soCchn})}"></th:block>
 
-                                                    <label class="form-field full">
-                                                        <span>Chuyên môn / Học vị / Ghi chú</span>
-                                                        <input type="text" name="specialtyDetail" th:value="${st.specialtyDetail}" placeholder="Ví dụ: Thạc sĩ · Nội khoa">
+                                                    <label class="form-field full" data-detail-field>
+                                                        <span data-detail-label>Chuyên môn / Ghi chú</span>
+                                                        <input type="text" name="specialtyDetail" data-detail-input th:value="${st.specialtyDetail}" placeholder="Ví dụ: Thạc sĩ · Nội khoa">
                                                     </label>
                                                 </div>
 
@@ -427,9 +427,9 @@
                 <!-- Chỉ hiện khi vai trò = Bác sĩ -->
                 <th:block th:replace="~{fragments/staff-doctor-fields :: fields(null, null, null, null)}"></th:block>
 
-                <label class="form-field full">
-                    <span>Chuyên môn / Học vị</span>
-                    <input type="text" name="specialtyDetail" required placeholder="Ví dụ: Thạc sĩ · Ngoại khoa">
+                <label class="form-field full" data-detail-field>
+                    <span data-detail-label>Chuyên môn / Ghi chú</span>
+                    <input type="text" name="specialtyDetail" data-detail-input data-req placeholder="Ví dụ: Chuyên viên viện phí">
                 </label>
             </div>
 
@@ -506,10 +506,16 @@
         </form>
     </div>
 </div>
-<style>[data-doctor-fields][hidden]{display:none !important;}</style>
+<style>[data-doctor-fields][hidden],[data-detail-field][hidden]{display:none !important;}</style>
 <script>
 /* Form nhân sự: chỉ vai trò "Bác sĩ" mới có Chuyên khoa trực thuộc + Số/Vị trí phòng (phòng lọc theo chuyên khoa). */
 (function () {
+    var DETAIL = {
+        'Y tá':     { label: 'Cấp bậc / Trình độ điều dưỡng', ph: 'Ví dụ: Điều dưỡng đại học', max: 50 },
+        'Dược sĩ':  { label: 'Bằng cấp dược',                 ph: 'Ví dụ: Dược sĩ đại học',    max: 100 },
+        'Thu ngân': { label: 'Chuyên môn / Ghi chú',          ph: 'Ví dụ: Chuyên viên viện phí', max: 150 },
+        'Quản lý':  { label: 'Chức vụ / Ghi chú',             ph: 'Ví dụ: Phó Giám đốc điều hành', max: 150 }
+    };
     function sync(form) {
         var role = form.querySelector('select[name="vaiTro"]');
         var box = form.querySelector('[data-doctor-fields]');
@@ -517,6 +523,18 @@
         var ck = box.querySelector('[data-ck-select]');
         var room = box.querySelector('[data-room-select]');
         var isDoctor = role.value === 'Bác sĩ';
+        // Ô "Chuyên môn / Học vị": Bác sĩ đã có ô Học vị riêng nên ẩn; Y tá -> yta.cap_bac, Dược sĩ -> duocsi.bang_cap,
+        // Thu ngân / Quản lý -> ghi chú chung (nhanvien.chi_tiet)
+        var df = form.querySelector('[data-detail-field]');
+        if (df) {
+            var di = df.querySelector('[data-detail-input]');
+            var dl = df.querySelector('[data-detail-label]');
+            var cfg = DETAIL[role.value];
+            df.hidden = isDoctor;
+            di.disabled = isDoctor;
+            di.required = !isDoctor && di.hasAttribute('data-req');
+            if (cfg) { dl.textContent = cfg.label; di.placeholder = cfg.ph; di.maxLength = cfg.max; }
+        }
         box.hidden = !isDoctor;
         ck.disabled = !isDoctor;          // trường bị disabled thì không được gửi lên server
         room.disabled = !isDoctor;
