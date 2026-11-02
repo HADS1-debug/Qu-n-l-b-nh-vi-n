@@ -47,6 +47,7 @@ public class PrescriptionRepository {
         p.setItems(new ArrayList<>());
         return p;
     }
+    
 
     /** Nạp danh sách đơn + chi tiết bằng 2 truy vấn. */
     private List<Prescription> load(String where, Object... args) {
