@@ -1,26 +1,33 @@
 package com.hms.controller;
 
-import com.hms.Entity.Examination;
-import com.hms.Service.BillingService;
-import com.hms.Service.ExaminationService;
-import com.hms.Service.PatientService;
-import com.hms.Service.PharmacyService;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.time.LocalDate;
-import java.util.List;
+import com.hms.Entity.Examination;
+import com.hms.Entity.Staff;
+import com.hms.Service.BillingService;
+import com.hms.Service.ExaminationService;
+import com.hms.Service.PatientService;
+import com.hms.Service.PharmacyService;
+import com.hms.Service.StaffService;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 @Controller
 @RequestMapping("/reports")
 public class ReportController {
-
+    
+    private final StaffService staffService;
     private final PatientService patientService;
     private final ExaminationService examinationService;
     private final PharmacyService pharmacyService;
@@ -29,11 +36,13 @@ public class ReportController {
     public ReportController(PatientService patientService,
                             ExaminationService examinationService,
                             PharmacyService pharmacyService,
-                            BillingService billingService) {
+                            BillingService billingService,
+                            StaffService staffService) {
         this.patientService = patientService;
         this.examinationService = examinationService;
         this.pharmacyService = pharmacyService;
         this.billingService = billingService;
+        this.staffService = staffService;
     }
 
     @GetMapping
@@ -44,6 +53,31 @@ public class ReportController {
         long totalDue = billingService.calculatePendingRevenue();
         long totalMedicines = pharmacyService.getAllMedicines().size();
 
+        // Phân bổ nhân sự theo vai trò: đếm từ CSDL (không tính nhân viên đã nghỉ việc)
+        List<Staff> activeStaff = new ArrayList<>();
+        for (Staff st : staffService.getAllStaff()) {
+            if (!"Đã nghỉ việc".equalsIgnoreCase(st.getTrangThai())) activeStaff.add(st);
+        }
+        long totalStaff = activeStaff.size();
+        String[][] roles = {
+                {"Bác sĩ chuyên khoa", "Bác sĩ", "#0284c7"},
+                {"Y tá / Điều dưỡng", "Y tá", "#059669"},
+                {"Dược sĩ", "Dược sĩ", "#7c3aed"},
+                {"Thu ngân", "Thu ngân", "#ea580c"},
+                {"Ban Giám đốc & Quản trị", "Quản lý", "#0284c7"}
+        };
+        List<Map<String, Object>> staffStats = new ArrayList<>();
+        for (String[] r : roles) {
+            long count = activeStaff.stream().filter(st -> r[1].equalsIgnoreCase(st.getVaiTro())).count();
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("label", r[0]);
+            row.put("count", count);
+            row.put("percent", totalStaff == 0 ? 0 : Math.round(count * 100.0 / totalStaff));
+            row.put("color", r[2]);
+            staffStats.add(row);
+        }
+        model.addAttribute("staffStats", staffStats);
+        model.addAttribute("totalStaff", totalStaff);
         model.addAttribute("activeNav", "reports");
         model.addAttribute("totalPatients", totalPatients);
         model.addAttribute("totalExams", totalExams);

@@ -72,44 +72,13 @@
                     </div>
                     <div class="section-card-body">
                         <div class="bar-list" style="display: grid; gap: 14px;">
-                            <div>
+                            <div th:each="s : ${staffStats}">
                                 <div class="bar-item-header" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                    <span>Bác sĩ chuyên khoa</span><strong>2 nhân sự</strong>
+                                    <span th:text="${s.label}">Bác sĩ chuyên khoa</span>
+                                    <strong th:text="${s.count + ' nhân sự'}">2 nhân sự</strong>
                                 </div>
                                 <div style="height: 8px; background: #e2e8f0; border-radius: 9999px; overflow: hidden;">
-                                    <div style="width: 33%; height: 100%; background: #0284c7;"></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="bar-item-header" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                    <span>Y tá / Điều dưỡng</span><strong>1 nhân sự</strong>
-                                </div>
-                                <div style="height: 8px; background: #e2e8f0; border-radius: 9999px; overflow: hidden;">
-                                    <div style="width: 17%; height: 100%; background: #059669;"></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="bar-item-header" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                    <span>Dược sĩ</span><strong>1 nhân sự</strong>
-                                </div>
-                                <div style="height: 8px; background: #e2e8f0; border-radius: 9999px; overflow: hidden;">
-                                    <div style="width: 17%; height: 100%; background: #7c3aed;"></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="bar-item-header" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                    <span>Thu ngân</span><strong>1 nhân sự</strong>
-                                </div>
-                                <div style="height: 8px; background: #e2e8f0; border-radius: 9999px; overflow: hidden;">
-                                    <div style="width: 17%; height: 100%; background: #ea580c;"></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="bar-item-header" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                    <span>Ban Giám đốc & Quản trị</span><strong>1 nhân sự</strong>
-                                </div>
-                                <div style="height: 8px; background: #e2e8f0; border-radius: 9999px; overflow: hidden;">
-                                    <div style="width: 17%; height: 100%; background: #0284c7;"></div>
+                                    <div th:style="'width: ' + ${s.percent} + '%; height: 100%; background: ' + ${s.color} + ';'"></div>
                                 </div>
                             </div>
                         </div>
